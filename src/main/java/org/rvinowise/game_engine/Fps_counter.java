@@ -22,7 +22,7 @@ public enum Fps_counter {
 
 
 
-    static public void drawing_step() {
+    static public void register_drawing_step() {
         last_drawing_step_moment = System.nanoTime();
         time_since_last_step = (last_drawing_step_moment - last_physics_step_moment) / 1000000000f;
         if (time_since_last_step > fastest_framerate) {
@@ -38,7 +38,7 @@ public enum Fps_counter {
         return next_step_needed;
     }
 
-    static public void physics_step() {
+    static public void register_physics_step() {
         next_step_needed = false;
         last_physics_step_moment = last_drawing_step_moment;
         step_multiplier = time_since_last_step / etalon_framerate;

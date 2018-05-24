@@ -23,7 +23,6 @@ import org.rvinowise.game_engine.pos_functions.pos_functions;
 import org.rvinowise.game_engine.units.Physical;
 import org.rvinowise.game_engine.units.animation.Animated;
 import org.rvinowise.game_engine.units.animation.Animation;
-import org.rvinowise.game_engine.utils.primitives.Field_dimention;
 
 import static android.opengl.GLES20.GL_BLEND;
 import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
@@ -127,54 +126,7 @@ public abstract class Engine
     }
 
 
-    public void step() {
-        for(int i_physical = 0; i_physical < animateds.size(); i_physical++) {
-            Animated animated = animateds.get(i_physical);
-            if (no_need_more(animated)) {
-                remove(i_physical);
-            } else {
-                animated.step();
-            }
-        }
-        viewport.adjust_to_watched(animateds);
 
-        if (is_time_to_check_outside()) {
-            remove_outside_animateds();
-        }
-    }
-
-    private void remove_outside_animateds() {
-        last_cleaning_outside = Fps_counter.getLast_physics_step_moment();
-        for(int i_physical = 0; i_physical < animateds.size(); i_physical++) {
-            Animated animated = animateds.get(i_physical);
-            if (is_outside(animated)) {
-                remove(i_physical);
-            }
-        }
-    }
-
-    private boolean is_time_to_check_outside() {
-        return (Fps_counter.getLast_physics_step_moment() - last_cleaning_outside)/ 1000000000f
-                > time_before_cleaning_outside;
-    }
-
-    protected boolean no_need_more(Animated animated) {
-        if (animated.isMarked_for_remove()) {
-            return true;
-        }
-        return false;
-    }
-    abstract protected boolean is_outside(Animated animated);
-
-    protected void remove(int i_physical) {
-        Physical physical = animateds.get(i_physical);
-        if (physical != null) {
-            Animated animated = (Animated)physical;
-            animated.getCurrent_animation().removeInstance(animated);
-        }
-
-        animateds.remove(i_physical);
-    }
 
     @Override
     public void onSurfaceCreated(GL10 glUnused, EGLConfig config)
@@ -239,16 +191,66 @@ public abstract class Engine
     public void onDrawFrame(GL10 glUnused)
     {
 
-        Fps_counter.drawing_step();
+        Fps_counter.register_drawing_step();
 
         if (Fps_counter.its_time_for_next_step()) {
-            Fps_counter.physics_step();
+            Fps_counter.register_physics_step();
             step();
         }
 
         draw();
     }
 
+    protected abstract void step();
+
+    public void process_elementary_physics() {
+        for(int i_physical = 0; i_physical < animateds.size(); i_physical++) {
+            Animated animated = animateds.get(i_physical);
+            if (no_need_more(animated)) {
+                remove(i_physical);
+            } else {
+                animated.step();
+            }
+        }
+        viewport.adjust_to_watched(animateds);
+
+        if (is_time_to_check_outside()) {
+            remove_outside_animateds();
+        }
+    }
+
+    private void remove_outside_animateds() {
+        last_cleaning_outside = Fps_counter.getLast_physics_step_moment();
+        for(int i_physical = 0; i_physical < animateds.size(); i_physical++) {
+            Animated animated = animateds.get(i_physical);
+            if (is_outside(animated)) {
+                remove(i_physical);
+            }
+        }
+    }
+
+    private boolean is_time_to_check_outside() {
+        return (Fps_counter.getLast_physics_step_moment() - last_cleaning_outside)/ 1000000000f
+                > time_before_cleaning_outside;
+    }
+
+    protected boolean no_need_more(Animated animated) {
+        if (animated.isMarked_for_remove()) {
+            return true;
+        }
+        return false;
+    }
+    abstract protected boolean is_outside(Animated animated);
+
+    protected void remove(int i_physical) {
+        Physical physical = animateds.get(i_physical);
+        if (physical != null) {
+            Animated animated = (Animated)physical;
+            animated.getCurrent_animation().removeInstance(animated);
+        }
+
+        animateds.remove(i_physical);
+    }
 
 
     private void draw() {
@@ -261,16 +263,19 @@ public abstract class Engine
             draw_game_objects();
         }
     }
-    private void draw_game_objects() {
-        draw_animated_units(backgrownd_animations);
-        score.draw(shader_program);
-        draw_animated_units(foregrownd_animations);
-    }
+
     private void draw_epilog() {
         draw_animated_units(backgrownd_animations);
         draw_animated_units(foregrownd_animations);
         score.draw(shader_program);
     }
+
+    private void draw_game_objects() {
+        draw_animated_units(backgrownd_animations);
+        score.draw(shader_program);
+        draw_animated_units(foregrownd_animations);
+    }
+
 
     private void draw_animated_units(Collection<Animation> animations) {
         for (Animation animation : animations) {
@@ -300,11 +305,9 @@ public abstract class Engine
         int bytes_per_float = 4;
         int mPositionDataSize = 2;
         int mTextureCoordDataSize = 2;
-
         int mTextureCoordOffset = 2*4;
 
         int mStrideBytes = (mPositionDataSize+mTextureCoordDataSize)*bytes_per_float;
-
 
         Rectangle_shape.getVertexBuffer().position(0);
         glVertexAttribPointer(
