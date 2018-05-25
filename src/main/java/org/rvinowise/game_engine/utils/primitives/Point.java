@@ -56,14 +56,7 @@ public class Point {
         );
         return res_point;
     }
-    public Point abs_minus(Point in_point) {
-        Point res_point = new Point(
-                signum(this.x) * abs(this.x) - in_point.x,
-                signum(this.y) * abs(this.y) - in_point.y,
-                signum(this.z) * abs(this.z) - in_point.z
-        );
-        return res_point;
-    }
+
 
     public Point reversed() {
         Point res_point = new Point(
